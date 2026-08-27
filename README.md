@@ -113,10 +113,15 @@ The server is mounted at **`http://localhost:3000/api/mcp`** (streamable HTTP)
 whenever the app is running. It speaks the [MCP Apps](https://blog.modelcontextprotocol.io/posts/2026-01-26-mcp-apps/)
 extension, so hosts that support it render the course player inline.
 
-**Claude Code:**
+**Claude Code:** already configured. [`.mcp.json`](.mcp.json) is committed, so
+cloning the repo is the whole setup — start the app and Claude Code finds the
+server. Confirm with `claude mcp list`, or `/mcp` inside a session.
+
+If your dev server lands on a different port (something else holding 3000), point
+it at the right one:
 
 ```bash
-claude mcp add --transport http course-maker http://localhost:3000/api/mcp
+claude mcp add --transport http course-maker http://localhost:3001/api/mcp
 ```
 
 **Anything else:** point your client at the same URL. For ChatGPT, which only
