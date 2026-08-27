@@ -1,0 +1,6 @@
+# Check out LF on every platform. Without this, core.autocrlf=true on Windows
+# materializes CRLF in the working tree, and `oxfmt --check` (endOfLine: "lf")
+# fails on every file — making `npm run lint` unpassable on Windows.
+* text=auto eol=lf
+
+*.ico binary
