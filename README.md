@@ -107,6 +107,31 @@ ask it to make one.
 
 ---
 
+## Where you watch a course
+
+The course lives in one SQLite file. The two front doors just draw it
+differently, and which one you get depends on the client.
+
+**In the app.** `http://localhost:3000/roadmap/<courseId>` is the studio: the
+player, the ordered outline you can drag and trim, a box to paste the next link
+into, and the built-in tutor answering out of the transcripts with the second
+each quote was said at.
+
+![The studio at localhost:3000 - player, outline, and the tutor answering with timestamps](docs/studio.png)
+
+**In an MCP client with a UI.** `get_course` renders the course-player View
+inline in the conversation - the same video, outline and transcript search,
+drawn by the host rather than by Next. Claude's desktop and web apps support
+MCP Apps and will show it.
+
+**In a terminal client, nowhere.** Claude Code talks to the same server and
+every tool works, but a terminal has no surface to render a View on, so
+`get_course` comes back as its text and structured output only. Nothing is
+broken - open the localhost URL, or connect a host with a UI, when you want to
+actually watch the course.
+
+---
+
 ## Using it as an MCP server
 
 The server is mounted at **`http://localhost:3000/api/mcp`** (streamable HTTP)
