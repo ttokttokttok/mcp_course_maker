@@ -29,7 +29,7 @@
     "clsx": "^2.1.1",
     "lucide-react": "^1.26.0",
     "mcp-use": "^2.3.3",
-    "next": "^16.2.11",
+    "next": "^16.3.3",
     "react": "^19.2.8",
     "react-dom": "^19.2.8",
     "remark-gfm": "^4.0.1",
@@ -50,8 +50,7 @@
     "oxlint": "^1.75.0",
     "tailwindcss": "^4.3.3",
     "tsx": "^4.23.1",
-    "typescript": "npm:@typescript/typescript6@^6.0.2",
-    "typescript-7": "npm:typescript@^7.0.2",
+    "typescript": "^7.0.2",
     "vite-tsconfig-paths": "^6.1.1",
     "vitest": "^4.1.10"
   },

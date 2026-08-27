@@ -3,6 +3,14 @@ import { withMcpUse, type NextConfigLike } from "mcp-use/next";
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  /**
+   * Next writes AGENTS.md and CLAUDE.md into the project root on dev start
+   * unless this is off. Declined: they would appear as untracked files in a
+   * contributor's working tree the first time they run `npm run dev`, which
+   * reads as the repo doing something behind their back.
+   */
+  agentRules: false,
+
   /** Packages Next must not bundle into the server build. */
   serverExternalPackages: [
     // A native module: it loads a `.node` binary at runtime, which the bundler

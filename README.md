@@ -263,6 +263,10 @@ Implement it and compose it in `createTranscriptProvider()` in
 
 ## Development
 
+**This project uses npm.** `package-lock.json` is committed and the `overrides`
+field below is npm syntax, which pnpm and yarn silently ignore — installing with
+one of those resolves a different dependency tree than the one that is tested.
+
 ```bash
 npm run dev        # app + MCP server + view build
 npm test           # vitest — no network, no API key
