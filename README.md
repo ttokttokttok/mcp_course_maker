@@ -90,6 +90,21 @@ and nothing to provision — delete the file and you have a clean install.
 Then either open the app and hit **+ New course**, or connect an MCP client and
 ask it to make one.
 
+> **Windows and WSL: pick one and stay there.** This project has two native
+> dependencies — `better-sqlite3` and the `rolldown` binary behind mcp-use's view
+> build — and npm only downloads binaries for the platform you install on. A
+> checkout under `/mnt/c` that you `npm install` from WSL and then run from
+> Windows (or the reverse) gets a missing or mismatched `.node` and fails with
+> something unhelpful, such as:
+>
+> ```
+> value `"builtin:vite-wasm-fallback"` does not match any variant of
+> enum `BindingBuiltinPluginName`
+> ```
+>
+> The fix is always the same: `rm -rf node_modules && npm install`, run from
+> whichever OS you intend to run `npm run dev` from.
+
 ---
 
 ## Using it as an MCP server
@@ -266,6 +281,15 @@ One script is worth knowing about:
 npm run feature -- <courseId>              # pin a course to the top of the catalog
 npm run feature -- <courseId> --unfeature
 ```
+
+### Why `overrides.vite` exists
+
+`package.json` pins a single `vite` for the whole tree. Without it, mcp-use's CLI
+brings its own `vite` (and therefore its own `rolldown` native binary) while
+vitest brings another. Two copies means two sets of platform binaries to keep in
+sync, and when only one of them has a binary for your OS, Node resolves *upward*
+and loads the wrong one — which fails as a confusing enum mismatch rather than as
+a missing file. One vite, one binary, one thing to get right.
 
 ## Stack
 
