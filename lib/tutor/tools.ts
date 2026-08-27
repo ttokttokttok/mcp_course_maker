@@ -1,10 +1,15 @@
 import { tool } from "ai";
 import { z } from "zod";
-import { getTranscript, getTranscriptsByIds } from "@/lib/transcripts/store";
-import { listRoadmapVideos } from "@/lib/roadmaps/roadmaps";
-import { getContextWindow } from "@/lib/engine/context";
-import { findConcept, findConceptAcrossVideos } from "@/lib/engine/search";
+import { conceptSearch, isRetrievalError, transcriptWindow } from "./retrieval";
 
+/**
+ * The built-in tutor's tools.
+ *
+ * Thin on purpose: every rule that decides WHAT may be read lives in
+ * `retrieval.ts`, which the MCP server calls too. This file is the AI SDK's
+ * wire shape and nothing else — schemas in, retrieval out — so the two front
+ * doors cannot come to disagree about which videos belong to a course.
+ */
 export function buildTutorTools(ctx: { roadmapId: string; videoId: string; positionSec: number }) {
   return {
     get_context: tool({
@@ -25,47 +30,30 @@ export function buildTutorTools(ctx: { roadmapId: string; videoId: string; posit
       }),
       execute: async ({ videoId, timestamp, halfWindowSec }) => {
         const target = videoId ?? ctx.videoId;
-
-        // Membership in THIS course, not merely "is a string". `getTranscript`
-        // is keyed by video id alone, across every course in the app, so an
-        // unvalidated id lets the MODEL choose which row gets read — and this is
-        // the first model-supplied identifier in the tutor tools; everything
-        // else is closure-captured from `ctx`.
-        //
-        // Worth being exact about the stake, so nobody later reads this as
-        // guarding more than it does: a transcript is captions for a third-party
-        // YouTube video, not user content, and the id cannot be enumerated from
-        // here. What the check denies is an ingestion oracle — whether ANY user
-        // of this app has ingested video X — and inference spent off-course.
-        if (target !== ctx.videoId) {
-          const vids = await listRoadmapVideos(ctx.roadmapId);
-          if (!vids.some((v) => v.videoId === target)) {
-            return { error: `video ${target} is not in this course` };
-          }
-        }
-
-        const doc = await getTranscript(target);
-        if (!doc) return { error: "transcript not ready for this video" };
-
-        // 0, never `ctx.positionSec`, on a different video. Carrying the
-        // current position into another video is what produced a confident
-        // answer about 30:00 of the wrong lecture — worse than refusing.
+        // 0, never `ctx.positionSec`, on a different video. Carrying the current
+        // position into another video is what produced a confident answer about
+        // 30:00 of the wrong lecture — worse than refusing.
         const defaultStart = target === ctx.videoId ? ctx.positionSec : 0;
-        const w = getContextWindow(doc.segments, timestamp ?? defaultStart, halfWindowSec);
-        return {
+        const result = await transcriptWindow({
+          courseId: ctx.roadmapId,
           videoId: target,
-          // So the model can say WHICH video it read, rather than implying the
-          // active one.
-          videoTitle: doc.title,
-          startSec: w.startSec,
-          endSec: w.endSec,
-          segments: w.segments,
-        };
+          timestampSec: timestamp ?? defaultStart,
+          halfWindowSec,
+        });
+        if (isRetrievalError(result)) {
+          return {
+            error:
+              result.error === "transcript-not-ready"
+                ? "transcript not ready for this video"
+                : `video ${target} is not in this course`,
+          };
+        }
+        return result;
       },
     }),
     find_concept: tool({
       description:
-        "Find where a concept is discussed — in the current video or across the whole roadmap. Returns timestamped quotes.",
+        "Find where a concept is discussed — in the current video or across the whole course. Returns timestamped quotes.",
       inputSchema: z.object({
         query: z.string().describe("Concept or phrase to find"),
         scope: z
@@ -74,26 +62,16 @@ export function buildTutorTools(ctx: { roadmapId: string; videoId: string; posit
         limit: z.number().optional().describe("Max hits (default 10)"),
       }),
       execute: async ({ query, scope, limit }) => {
-        if (scope === "video") {
-          const doc = await getTranscript(ctx.videoId);
-          return {
-            hits: doc
-              ? findConcept(doc.segments, query, limit).map((h) => ({
-                  ...h,
-                  videoId: ctx.videoId,
-                }))
-              : [],
-          };
-        }
-        const vids = await listRoadmapVideos(ctx.roadmapId);
-        const docs = await getTranscriptsByIds(vids.map((v) => v.videoId));
-        return {
-          hits: findConceptAcrossVideos(
-            docs.map((d) => ({ videoId: d.videoId, segments: d.segments })),
-            query,
-            limit,
-          ),
-        };
+        const result = await conceptSearch({
+          courseId: ctx.roadmapId,
+          query,
+          // "roadmap" is this tool's long-standing wire value for the whole
+          // course; `retrieval.ts` calls the same scope "course".
+          scope: scope === "video" ? "video" : "course",
+          videoId: ctx.videoId,
+          limit,
+        });
+        return isRetrievalError(result) ? { hits: [] } : { hits: result.hits };
       },
     }),
   };

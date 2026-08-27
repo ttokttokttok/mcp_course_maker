@@ -64,7 +64,13 @@ export function seedVideo(
 
 export function seedTranscript(
   videoId: string,
-  fields: { title?: string; channel?: string; durationSec?: number | null } = {},
+  fields: {
+    title?: string;
+    channel?: string;
+    durationSec?: number | null;
+    /** Real lines, for the tests that search inside a transcript. */
+    segments?: { start: number; duration: number; text: string }[];
+  } = {},
 ): void {
   const title = fields.title ?? videoId;
   const channel = fields.channel ?? "";
@@ -80,7 +86,11 @@ export function seedTranscript(
       source: "captions",
       language: "en",
       fetchedAt: "2026-01-01T00:00:00.000Z",
-      segments: [],
+      // Inside the document as well as in its own column, because that is what
+      // `putTranscript` stores — readers split between the two, and a fixture
+      // that only filled the column made `courseOutline` look broken.
+      ...(fields.durationSec == null ? {} : { durationSec: fields.durationSec }),
+      segments: fields.segments ?? [],
     }),
     title,
     channel,

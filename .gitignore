@@ -23,6 +23,9 @@
 # the local database (SQLite file + its write-ahead log)
 /data
 
+# mcp-use build output (server bundle + compiled views)
+/.mcp-use
+
 # misc
 .DS_Store
 *.pem

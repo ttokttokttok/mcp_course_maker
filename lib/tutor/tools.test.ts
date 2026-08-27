@@ -41,6 +41,10 @@ vi.mock("@/lib/transcripts/store", () => ({
   getTranscriptsByIds: vi.fn(async () => [docA]),
 }));
 vi.mock("@/lib/roadmaps/roadmaps", () => ({
+  // `retrieval.ts` proves the course exists before it reads anything, so the
+  // "not in this course" refusal below is about membership and not about a
+  // missing course.
+  getRoadmap: vi.fn(async () => ({ id: "r1", title: "T" })),
   listRoadmapVideos: vi.fn(async () => [
     { videoId: "aaaaaaaaaaa" },
     { videoId: "active" },
